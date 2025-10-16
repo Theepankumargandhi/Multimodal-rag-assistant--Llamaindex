@@ -1,24 +1,23 @@
-import streamlit as st
-from PIL import Image
-import tempfile
+# app.py
 import os
+import tempfile
+from PIL import Image
+import streamlit as st
 from dotenv import load_dotenv
 
-from langchain_groq import ChatGroq
-from langchain_openai import ChatOpenAI
+# Hybrid RAG
+from vector_search import init_rag_system, run_multimodal_qa
 
-# Import from new hybrid vector_search
-from vector_search import (
-    init_rag_system,
-    run_multimodal_qa,
-)
-
+# Neo4j (for loading past chat history)
 from neo4j import GraphDatabase
 from config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+import config  # so we can toggle GRAPH_RAG_ENABLED at runtime
 
 load_dotenv()
 
-# ------------------ Neo4j Load History ------------------
+# ==============================
+# Helpers
+# ==============================
 def load_user_history_from_neo4j(user_id: str):
     query = """
     MATCH (u:User {id: $user_id})-[:HAS_SESSION]->(s:Session)-[:ASKED]->(q:Query)-[:ANSWERED_BY]->(a:Answer)
@@ -31,7 +30,19 @@ def load_user_history_from_neo4j(user_id: str):
         results = session.run(query, parameters={"user_id": user_id})
         return [(record["question"], record["answer"]) for record in results]
 
-# ------------------ Initialize RAG System (Once) ------------------
+
+def reset_session():
+    st.session_state.page = "start"
+    st.session_state.user_id = None
+    st.session_state.chat_history = []
+    for k in ("llm_model", "temperature", "max_tokens"):
+        if k in st.session_state:
+            del st.session_state[k]
+
+
+# ==============================
+# Initialize RAG System once
+# ==============================
 if "rag_initialized" not in st.session_state:
     with st.spinner("🚀 Initializing Hybrid RAG System (LlamaIndex + LangChain)..."):
         try:
@@ -41,76 +52,74 @@ if "rag_initialized" not in st.session_state:
             st.error(f"Failed to initialize RAG system: {e}")
             st.stop()
 
-# ------------------ Session State Setup ------------------
-if "user_id" not in st.session_state:
-    st.session_state.user_id = None
-if "page" not in st.session_state:
-    st.session_state.page = "start"
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# ==============================
+# Session state defaults
+# ==============================
+st.session_state.setdefault("user_id", None)
+st.session_state.setdefault("page", "start")
+st.session_state.setdefault("chat_history", [])
+st.session_state.setdefault("llm_model", "gpt-4o-mini")
+st.session_state.setdefault("temperature", 0.2)
+st.session_state.setdefault("max_tokens", 1024)
+st.session_state.setdefault("hist_n", 5)  # how many history rows to show in UI
 
-# ------------------ Page 1: Landing ------------------
+
+# ==============================
+# Sidebar: Global toggles
+# ==============================
+with st.sidebar:
+    st.markdown("### ⚙️ Settings")
+    use_graph = st.checkbox("Enable Graph-RAG", value=config.GRAPH_RAG_ENABLED)
+    config.GRAPH_RAG_ENABLED = bool(use_graph)
+    st.caption("When ON, answers may include relationship facts from Neo4j for relational questions.")
+    if st.button("🧹 Clear chat"):
+        st.session_state.chat_history = []
+        st.success("Cleared current session chat.")
+
+
+# ==============================
+# Page 1: Landing
+# ==============================
 if st.session_state.page == "start":
     st.title("🤖 Multimodal Retrieval-Augmented Generation (RAG) Assistant")
-    
-    # Show system status
+
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.markdown("""
-This system integrates **document, audio, image, and video data** into a unified RAG framework for enhanced contextual understanding.
+        st.markdown(
+            """
+This system integrates **document, audio, image, and video** into a unified RAG framework.
 
-**Powered by:**
-- 🦙 **LlamaIndex** - Advanced RAG & multimodal retrieval
-- 🔗 **LangChain** - LLM orchestration & conversation memory
-- 🗄️ **Neo4j** - Persistent chat history
-- 🎯 **ChromaDB** - Vector storage across modalities
-""")
+**Powered by**
+- 🦙 LlamaIndex (multimodal retrieval)
+- 🔗 LangChain (LLM orchestration & memory)
+- 🗄️ Neo4j (chat history + Graph-RAG)
+- 🎯 ChromaDB (vector store)
+"""
+        )
     with col2:
         st.success("✅ RAG System Ready")
 
     with st.expander("📖 Project Info", expanded=False):
-        st.markdown("""
-### Multimodal RAG Assistant – Architecture
-
-This assistant integrates **text, audio, image, and video data** into a unified **Retrieval-Augmented Generation (RAG)** system using a **hybrid LlamaIndex + LangChain architecture**.
-
-**🛠️ Technology Stack**
-- **LlamaIndex** - Query engines, vector indexing, multimodal retrieval
-- **LangChain** - LLM orchestration, conversation chains, memory management
-- **ChromaDB** - Vector storage (text/audio/image/video)
-- **OpenAI Whisper** - Audio/video transcription
-- **CLIP** - Image embeddings
-- **OpenAI / Groq LLMs** - QA and reranking
-- **Neo4j** - User-specific chat history persistence
-- **RRF (Reciprocal Rank Fusion)** + **LLM-based reranking**
-
-**🔄 Workflow**
-1) **Input** (text or media) → 
-2) **Classify** (history/follow-up/new) →
-3) **Multimodal retrieval** (LlamaIndex) → 
-4) **LLM rerank** → 
-5) **Answer generation** →
-6) **Persist to Neo4j**
-
-**🎯 Key Features**
-- Hybrid architecture leveraging strengths of both frameworks
-- Multimodal vector search with fusion
-- Context-aware follow-up handling
-- Persistent conversation memory
-- Dynamic model selection (OpenAI/Groq)
-        """)
+        st.markdown(
+            """
+### Architecture (high level)
+1) Input (text/media)  
+2) Classify (history / follow-up / new)  
+3) Multimodal retrieval (LlamaIndex)  
+4) LLM rerank  
+5) Answer generation  
+6) Persist to Neo4j (history + optional graph facts)
+"""
+        )
 
     st.markdown("---")
     user_id = st.text_input("👤 Enter your User ID", key="user_id_input")
-    
-    st.markdown("---")
-    st.markdown("### ⚙️ Model Settings")
 
+    st.markdown("---")
+    st.markdown("### 🧪 Model Settings")
     model_choice = st.selectbox(
-        "Choose LLM Model", 
-        ["OpenAI (gpt-4o-mini)", "Groq (llama-3.3-70b-versatile)"]
+        "Choose LLM Model", ["OpenAI (gpt-4o-mini)", "Groq (llama-3.3-70b-versatile)"]
     )
-    
     col1, col2 = st.columns(2)
     with col1:
         temperature = st.slider("Temperature", 0.0, 1.0, 0.2, 0.05)
@@ -118,68 +127,55 @@ This assistant integrates **text, audio, image, and video data** into a unified 
         max_tokens = st.slider("Max Tokens", 128, 4096, 1024, 64)
 
     if "OpenAI" in model_choice:
-        st.info("ℹ️ `GPT-4o-mini` supports ~128k context; recommended: 2048–4096 tokens")
+        st.info("ℹ️ `gpt-4o-mini` has large context; try 2048–4096 tokens for long answers.")
     else:
-        st.info("ℹ️ `llama-3.3-70b-versatile` (Groq) supports ~8k context; recommended: 2048–4096 tokens")
+        st.info("ℹ️ `llama-3.3-70b-versatile` (~8k context); 2048–4096 tokens is typical.")
 
     if st.button("🚀 Continue", type="primary"):
         if user_id.strip():
             st.session_state.user_id = user_id.strip()
             st.session_state.page = "chat"
-
-            # Store model settings
-            if "OpenAI" in model_choice:
-                st.session_state.llm_model = "gpt-4o-mini"
-            else:
-                st.session_state.llm_model = "llama-3.3-70b-versatile"
-            
+            st.session_state.llm_model = "gpt-4o-mini" if "OpenAI" in model_choice else "llama-3.3-70b-versatile"
             st.session_state.temperature = temperature
             st.session_state.max_tokens = max_tokens
 
-            # Load past chat history from Neo4j
-            past_chats = load_user_history_from_neo4j(user_id.strip())
-            if past_chats:
+            # hydrate chat history from Neo4j
+            past = load_user_history_from_neo4j(st.session_state.user_id)
+            if past:
                 st.session_state.chat_history = [
-                    {"user": q, "bot": a, "source": "history"} 
-                    for q, a in past_chats[-10:]  # Last 10 conversations
+                    {"user": q, "bot": a, "source": "history"} for q, a in past[-10:]
                 ]
-
             st.rerun()
         else:
             st.warning("⚠️ User ID cannot be empty.")
 
-# ------------------ Page 2: Chat UI ------------------
+
+# ==============================
+# Page 2: Chat
+# ==============================
 elif st.session_state.page == "chat":
     st.title("💬 Ask Your Question")
-    
-    # Header with user info and sign out
+
     col1, col2 = st.columns([3, 1])
     with col1:
         st.markdown(f"**👤 User:** `{st.session_state.user_id}`")
         st.markdown(f"**🤖 Model:** `{st.session_state.llm_model}`")
+        st.caption(f"Graph-RAG: {'ON' if config.GRAPH_RAG_ENABLED else 'OFF'}")
     with col2:
         if st.button("🚪 Sign Out", type="secondary"):
-            st.session_state.page = "start"
-            st.session_state.user_id = None
-            st.session_state.chat_history = []
-            if 'llm_model' in st.session_state:
-                del st.session_state.llm_model
-            if 'temperature' in st.session_state:
-                del st.session_state.temperature
-            if 'max_tokens' in st.session_state:
-                del st.session_state.max_tokens
+            reset_session()
             st.rerun()
 
     st.markdown("---")
 
-    # Input type selection and history button
+    # Input type + history
     col1, col2 = st.columns([3, 1])
     with col1:
         input_type = st.radio(
-            "Choose input type", 
-            ["Text", "Image", "Audio", "Video"], 
+            "Choose input type",
+            ["Text", "Image", "Audio", "Video"],
             key="input_type_radio",
-            horizontal=True
+            horizontal=True,
         )
     with col2:
         if st.button("📜 History"):
@@ -187,27 +183,27 @@ elif st.session_state.page == "chat":
                 if not st.session_state.chat_history:
                     st.info("No conversation history yet.")
                 else:
-                    for item in st.session_state.chat_history:
+                    N = st.session_state.get("hist_n", 5)
+                    to_show = st.session_state.chat_history[-N:]
+                    for item in to_show:
                         st.markdown(f"**You:** {item['user']}")
-                        
-                        source = item.get('source', 'unknown')
-                        if source == "retriever":
-                            label = "🔍 **Bot (Document):**"
-                        elif source == "llm":
-                            label = "🤖 **Bot (LLM-only):**"
-                        elif source == "summary":
-                            label = "📝 **Bot (Summary):**"
-                        else:
-                            label = "**Bot:**"
-                        
+                        label = {
+                            "retriever": "🔍 **Bot (Document):**",
+                            "llm": "🤖 **Bot (LLM-only):**",
+                            "summary": "📝 **Bot (Summary):**",
+                        }.get(item.get("source", ""), "**Bot:**")
                         st.markdown(f"{label} {item['bot']}")
                         st.markdown("---")
+                    if len(st.session_state.chat_history) > N:
+                        if st.button("Load more"):
+                            st.session_state.hist_n = N + 5
+                            st.rerun()
             st.stop()
 
+    # Collect input
     query = None
     file_path = None
 
-    # Input handling based on type
     if input_type == "Text":
         query = st.text_area("💭 Type your question here", height=100)
 
@@ -237,59 +233,48 @@ elif st.session_state.page == "chat":
                 tmp.write(uploaded_file.getbuffer())
                 file_path = tmp.name
 
-    # Submit button
+    # Submit
     if st.button("🚀 Submit", type="primary"):
-        # Validate inputs
-        if input_type == "Text":
-            if not query or not query.strip():
-                st.warning("⚠️ Please enter a question.")
-                st.stop()
-        elif input_type == "Image":
-            if not file_path:
-                st.warning("⚠️ Please upload an image.")
-                st.stop()
-            if not query or not query.strip():
-                st.warning("⚠️ Please add a question about the image.")
-                st.stop()
-        else:
-            if not file_path:
-                st.warning(f"⚠️ Please upload a {input_type.lower()} file.")
-                st.stop()
+        # Basic validation
+        if input_type == "Text" and not (query and query.strip()):
+            st.warning("⚠️ Please enter a question.")
+            st.stop()
+        if input_type == "Image" and (not file_path or not (query and query.strip())):
+            st.warning("⚠️ Please upload an image and ask a question about it.")
+            st.stop()
+        if input_type in {"Audio", "Video"} and not file_path:
+            st.warning(f"⚠️ Please upload a {input_type.lower()} file.")
+            st.stop()
 
         # Exit shortcut
         if input_type == "Text" and query.strip().lower() == "exit":
-            st.session_state.page = "start"
-            st.session_state.user_id = None
-            st.session_state.chat_history = []
+            reset_session()
             st.success("✅ You have been logged out.")
             st.rerun()
 
         with st.spinner("🔄 Processing your request..."):
-            # Transcribe media to text
+            # Transcribe if needed
             if input_type in ["Audio", "Video"]:
                 try:
                     from openai import OpenAI
                     client = OpenAI()
                     with open(file_path, "rb") as f:
                         transcript = client.audio.transcriptions.create(
-                            model="whisper-1", 
-                            file=f
+                            model="whisper-1", file=f
                         )
                     query = (transcript.text or "").strip()
-                    
                     if not query:
-                        st.warning(f"⚠️ Could not transcribe the {input_type.lower()}. Please try another file.")
+                        st.warning(f"⚠️ Could not transcribe the {input_type.lower()} file.")
                         if file_path and os.path.exists(file_path):
                             os.remove(file_path)
                         st.stop()
-                        
                 except Exception as e:
                     st.error(f"❌ Transcription failed: {e}")
                     if file_path and os.path.exists(file_path):
                         os.remove(file_path)
                     st.stop()
 
-            # Run QA using hybrid system
+            # Run QA
             try:
                 result = run_multimodal_qa(
                     user_id=st.session_state.user_id,
@@ -297,68 +282,74 @@ elif st.session_state.page == "chat":
                     input_type=input_type.lower(),
                     file_path=file_path,
                     llm_model=st.session_state.llm_model,
-                    temperature=st.session_state.temperature
+                    temperature=st.session_state.temperature,
                 )
-                
-                answer = result["answer"]
-                source = result["source"]
-                
             except Exception as e:
-                st.error(f"❌ Error processing query: {e}")
+                st.error("❌ Error processing query.")
+                st.exception(e)
                 if file_path and os.path.exists(file_path):
                     os.remove(file_path)
                 st.stop()
 
-            # Display result
-            if input_type in ["Audio", "Video"]:
-                shown_query = f"[{input_type} transcription] {query[:180]}{'...' if len(query) > 180 else ''}"
-            elif input_type == "Image":
-                shown_query = f"[Image] {query}"
-            else:
-                shown_query = query
+            answer = result["answer"]
+            source = result["source"]
+            graph_facts = result.get("graph_facts", [])
+            source_types = result.get("source_types", [])
 
+            # Display
+            shown_query = (
+                f"[{input_type} transcription] {query[:180]}{'...' if len(query) > 180 else ''}"
+                if input_type in ["Audio", "Video"]
+                else (f"[Image] {query}" if input_type == "Image" else query)
+            )
             st.markdown("### 💬 Response")
             st.markdown(f"**You:** {shown_query}")
-            
-            if source == "retriever":
-                label = "🔍 **Bot (Document Retrieval):**"
-                source_types = result.get("source_types", [])
-                if source_types:
-                    st.caption(f"📚 Sources: {', '.join(source_types)}")
-            elif source == "llm":
-                label = "🤖 **Bot (LLM Direct):**"
-            elif source == "summary":
-                label = "📝 **Bot (History Summary):**"
-            else:
-                label = "**Bot:**"
-            
+
+            label = {
+                "retriever": "🔍 **Bot (Document Retrieval):**",
+                "llm": "🤖 **Bot (LLM Direct):**",
+                "summary": "📝 **Bot (History Summary):**",
+            }.get(source, "**Bot:**")
             st.markdown(f"{label} {answer}")
 
-            # Add to chat history
-            st.session_state.chat_history.append({
-                "user": shown_query,
-                "bot": answer,
-                "source": source
-            })
+            if source_types:
+                st.caption(f"📚 Sources: {', '.join(source_types)}")
+            if graph_facts:
+                st.caption("🧠 Used Graph-RAG context")
+                with st.expander(f"🔗 Supporting Graph Facts (Neo4j) — {len(graph_facts)} found"):
+                    # show unique doc ids
+                    docs = set()
+                    for f in graph_facts:
+                        # dataclass or dict
+                        e1 = getattr(f, "e1", None) or f.get("e1")
+                        rel = getattr(f, "rel", None) or f.get("rel")
+                        e2 = getattr(f, "e2", None) or f.get("e2")
+                        doc = getattr(f, "source_doc", None) or f.get("source_doc", "unknown")
+                        chunk = getattr(f, "chunk_id", None) or f.get("chunk_id", "unknown")
+                        docs.add(doc)
+                        st.write(f"- {e1} {rel} {e2} (doc: {doc}, chunk: {chunk})")
+                    if docs:
+                        st.caption("📄 Docs: " + ", ".join(sorted([d for d in docs if d])))
 
-        # Clean up temp file
+            # Add to chat history
+            st.session_state.chat_history.append(
+                {"user": shown_query, "bot": answer, "source": source}
+            )
+
+        # Clean temp file
         if file_path and os.path.exists(file_path):
             os.remove(file_path)
 
-    # Show recent conversation
+    # Recent conversation
     if st.session_state.chat_history:
         st.markdown("---")
         st.markdown("### 📝 Recent Conversation")
-        # Show last 3 exchanges
         for item in st.session_state.chat_history[-3:]:
             with st.container():
                 st.markdown(f"**You:** {item['user']}")
-                
-                source = item.get('source', 'unknown')
-                if source == "retriever":
-                    st.markdown(f"🔍 **Bot:** {item['bot']}")
-                elif source == "llm":
-                    st.markdown(f"🤖 **Bot:** {item['bot']}")
-                else:
-                    st.markdown(f"**Bot:** {item['bot']}")
+                tag = {
+                    "retriever": "🔍 **Bot:**",
+                    "llm": "🤖 **Bot:**",
+                }.get(item.get("source", ""), "**Bot:**")
+                st.markdown(f"{tag} {item['bot']}")
                 st.markdown("---")
