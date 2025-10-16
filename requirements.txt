@@ -1,19 +1,50 @@
+# Core Framework
 streamlit
-Pillow
 python-dotenv
-neo4j
+
+# LangChain (keeping for LLM orchestration & Neo4j)
 langchain
 langchain-openai
 langchain-groq
 langchain-community
+
+# LlamaIndex (NEW - for RAG pipeline)
+llama-index
+llama-index-core
+llama-index-llms-openai
+llama-index-llms-groq
+llama-index-embeddings-openai
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma
+llama-index-readers-file
+llama-index-postprocessor-cohere-rerank  # Optional: advanced reranking
+
+# Vector Database
+chromadb
+
+# Database
+neo4j
+
+# LLM APIs
 openai
 tiktoken
-chromadb
+
+# Media Processing
+Pillow
 pydub
 moviepy
 opencv-python
+
+# Document Processing
 pymupdf
 pypdf
+
+# ML Models
 transformers
+sentence-transformers
 accelerate
-bitsandbytes
+torch
+torchvision
+
+# Optional: Advanced reranking (requires Cohere API key)
+# cohere
