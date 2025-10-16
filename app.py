@@ -44,7 +44,7 @@ def reset_session():
 # Initialize RAG System once
 # ==============================
 if "rag_initialized" not in st.session_state:
-    with st.spinner("🚀 Initializing Hybrid RAG System (LlamaIndex + LangChain)..."):
+    with st.spinner(" Initializing Hybrid RAG System (LlamaIndex + LangChain)..."):
         try:
             init_rag_system(llm_model="gpt-4o-mini", temperature=0.0)
             st.session_state.rag_initialized = True
@@ -68,7 +68,7 @@ st.session_state.setdefault("hist_n", 5)  # how many history rows to show in UI
 # Sidebar: Global toggles
 # ==============================
 with st.sidebar:
-    st.markdown("### ⚙️ Settings")
+    st.markdown("###  Settings")
     use_graph = st.checkbox("Enable Graph-RAG", value=config.GRAPH_RAG_ENABLED)
     config.GRAPH_RAG_ENABLED = bool(use_graph)
     st.caption("When ON, answers may include relationship facts from Neo4j for relational questions.")
@@ -81,7 +81,7 @@ with st.sidebar:
 # Page 1: Landing
 # ==============================
 if st.session_state.page == "start":
-    st.title("🤖 Multimodal Retrieval-Augmented Generation (RAG) Assistant")
+    st.title(" Multimodal Retrieval-Augmented Generation (RAG) Assistant")
 
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -90,16 +90,16 @@ if st.session_state.page == "start":
 This system integrates **document, audio, image, and video** into a unified RAG framework.
 
 **Powered by**
-- 🦙 LlamaIndex (multimodal retrieval)
-- 🔗 LangChain (LLM orchestration & memory)
-- 🗄️ Neo4j (chat history + Graph-RAG)
-- 🎯 ChromaDB (vector store)
+-  LlamaIndex (multimodal retrieval)
+-  LangChain (LLM orchestration & memory)
+-  Neo4j (chat history + Graph-RAG)
+-  ChromaDB (vector store)
 """
         )
     with col2:
-        st.success("✅ RAG System Ready")
+        st.success(" RAG System Ready")
 
-    with st.expander("📖 Project Info", expanded=False):
+    with st.expander(" Project Info", expanded=False):
         st.markdown(
             """
 ### Architecture (high level)
@@ -113,10 +113,10 @@ This system integrates **document, audio, image, and video** into a unified RAG 
         )
 
     st.markdown("---")
-    user_id = st.text_input("👤 Enter your User ID", key="user_id_input")
+    user_id = st.text_input(" Enter your User ID", key="user_id_input")
 
     st.markdown("---")
-    st.markdown("### 🧪 Model Settings")
+    st.markdown("###  Model Settings")
     model_choice = st.selectbox(
         "Choose LLM Model", ["OpenAI (gpt-4o-mini)", "Groq (llama-3.3-70b-versatile)"]
     )
@@ -127,11 +127,11 @@ This system integrates **document, audio, image, and video** into a unified RAG 
         max_tokens = st.slider("Max Tokens", 128, 4096, 1024, 64)
 
     if "OpenAI" in model_choice:
-        st.info("ℹ️ `gpt-4o-mini` has large context; try 2048–4096 tokens for long answers.")
+        st.info(" `gpt-4o-mini` has large context; try 2048–4096 tokens for long answers.")
     else:
-        st.info("ℹ️ `llama-3.3-70b-versatile` (~8k context); 2048–4096 tokens is typical.")
+        st.info("`llama-3.3-70b-versatile` (~8k context); 2048–4096 tokens is typical.")
 
-    if st.button("🚀 Continue", type="primary"):
+    if st.button(" Continue", type="primary"):
         if user_id.strip():
             st.session_state.user_id = user_id.strip()
             st.session_state.page = "chat"
@@ -147,22 +147,22 @@ This system integrates **document, audio, image, and video** into a unified RAG 
                 ]
             st.rerun()
         else:
-            st.warning("⚠️ User ID cannot be empty.")
+            st.warning(" User ID cannot be empty.")
 
 
 # ==============================
 # Page 2: Chat
 # ==============================
 elif st.session_state.page == "chat":
-    st.title("💬 Ask Your Question")
+    st.title(" Ask Your Question")
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.markdown(f"**👤 User:** `{st.session_state.user_id}`")
-        st.markdown(f"**🤖 Model:** `{st.session_state.llm_model}`")
+        st.markdown(f"** User:** `{st.session_state.user_id}`")
+        st.markdown(f"** Model:** `{st.session_state.llm_model}`")
         st.caption(f"Graph-RAG: {'ON' if config.GRAPH_RAG_ENABLED else 'OFF'}")
     with col2:
-        if st.button("🚪 Sign Out", type="secondary"):
+        if st.button(" Sign Out", type="secondary"):
             reset_session()
             st.rerun()
 
@@ -178,7 +178,7 @@ elif st.session_state.page == "chat":
             horizontal=True,
         )
     with col2:
-        if st.button("📜 History"):
+        if st.button(" History"):
             with st.expander("Conversation History", expanded=True):
                 if not st.session_state.chat_history:
                     st.info("No conversation history yet.")
@@ -188,9 +188,9 @@ elif st.session_state.page == "chat":
                     for item in to_show:
                         st.markdown(f"**You:** {item['user']}")
                         label = {
-                            "retriever": "🔍 **Bot (Document):**",
-                            "llm": "🤖 **Bot (LLM-only):**",
-                            "summary": "📝 **Bot (Summary):**",
+                            "retriever": " **Bot (Document):**",
+                            "llm": " **Bot (LLM-only):**",
+                            "summary": " **Bot (Summary):**",
                         }.get(item.get("source", ""), "**Bot:**")
                         st.markdown(f"{label} {item['bot']}")
                         st.markdown("---")
@@ -205,20 +205,20 @@ elif st.session_state.page == "chat":
     file_path = None
 
     if input_type == "Text":
-        query = st.text_area("💭 Type your question here", height=100)
+        query = st.text_area(" Type your question here", height=100)
 
     elif input_type == "Image":
         uploaded_file = st.file_uploader("📷 Upload an image", type=["png", "jpg", "jpeg"])
         if uploaded_file:
             image = Image.open(uploaded_file)
             st.image(image, caption="Uploaded Image", use_container_width=True)
-            query = st.text_area("❓ Ask a question about this image", height=100)
+            query = st.text_area(" Ask a question about this image", height=100)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
                 image.save(tmp.name)
                 file_path = tmp.name
 
     elif input_type == "Audio":
-        uploaded_file = st.file_uploader("🎵 Upload an audio file", type=["mp3", "wav", "m4a"])
+        uploaded_file = st.file_uploader(" Upload an audio file", type=["mp3", "wav", "m4a"])
         if uploaded_file:
             st.audio(uploaded_file)
             with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
@@ -226,7 +226,7 @@ elif st.session_state.page == "chat":
                 file_path = tmp.name
 
     elif input_type == "Video":
-        uploaded_file = st.file_uploader("🎬 Upload a video file", type=["mp4", "mov", "avi"])
+        uploaded_file = st.file_uploader(" Upload a video file", type=["mp4", "mov", "avi"])
         if uploaded_file:
             st.video(uploaded_file)
             with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
@@ -234,25 +234,25 @@ elif st.session_state.page == "chat":
                 file_path = tmp.name
 
     # Submit
-    if st.button("🚀 Submit", type="primary"):
+    if st.button(" Submit", type="primary"):
         # Basic validation
         if input_type == "Text" and not (query and query.strip()):
-            st.warning("⚠️ Please enter a question.")
+            st.warning(" Please enter a question.")
             st.stop()
         if input_type == "Image" and (not file_path or not (query and query.strip())):
-            st.warning("⚠️ Please upload an image and ask a question about it.")
+            st.warning(" Please upload an image and ask a question about it.")
             st.stop()
         if input_type in {"Audio", "Video"} and not file_path:
-            st.warning(f"⚠️ Please upload a {input_type.lower()} file.")
+            st.warning(f" Please upload a {input_type.lower()} file.")
             st.stop()
 
         # Exit shortcut
         if input_type == "Text" and query.strip().lower() == "exit":
             reset_session()
-            st.success("✅ You have been logged out.")
+            st.success(" You have been logged out.")
             st.rerun()
 
-        with st.spinner("🔄 Processing your request..."):
+        with st.spinner(" Processing your request..."):
             # Transcribe if needed
             if input_type in ["Audio", "Video"]:
                 try:
@@ -264,12 +264,12 @@ elif st.session_state.page == "chat":
                         )
                     query = (transcript.text or "").strip()
                     if not query:
-                        st.warning(f"⚠️ Could not transcribe the {input_type.lower()} file.")
+                        st.warning(f" Could not transcribe the {input_type.lower()} file.")
                         if file_path and os.path.exists(file_path):
                             os.remove(file_path)
                         st.stop()
                 except Exception as e:
-                    st.error(f"❌ Transcription failed: {e}")
+                    st.error(f" Transcription failed: {e}")
                     if file_path and os.path.exists(file_path):
                         os.remove(file_path)
                     st.stop()
@@ -285,7 +285,7 @@ elif st.session_state.page == "chat":
                     temperature=st.session_state.temperature,
                 )
             except Exception as e:
-                st.error("❌ Error processing query.")
+                st.error(" Error processing query.")
                 st.exception(e)
                 if file_path and os.path.exists(file_path):
                     os.remove(file_path)
@@ -302,20 +302,20 @@ elif st.session_state.page == "chat":
                 if input_type in ["Audio", "Video"]
                 else (f"[Image] {query}" if input_type == "Image" else query)
             )
-            st.markdown("### 💬 Response")
+            st.markdown("###  Response")
             st.markdown(f"**You:** {shown_query}")
 
             label = {
-                "retriever": "🔍 **Bot (Document Retrieval):**",
-                "llm": "🤖 **Bot (LLM Direct):**",
-                "summary": "📝 **Bot (History Summary):**",
+                "retriever": " **Bot (Document Retrieval):**",
+                "llm": " **Bot (LLM Direct):**",
+                "summary": " **Bot (History Summary):**",
             }.get(source, "**Bot:**")
             st.markdown(f"{label} {answer}")
 
             if source_types:
                 st.caption(f"📚 Sources: {', '.join(source_types)}")
             if graph_facts:
-                st.caption("🧠 Used Graph-RAG context")
+                st.caption(" Used Graph-RAG context")
                 with st.expander(f"🔗 Supporting Graph Facts (Neo4j) — {len(graph_facts)} found"):
                     # show unique doc ids
                     docs = set()
@@ -329,7 +329,7 @@ elif st.session_state.page == "chat":
                         docs.add(doc)
                         st.write(f"- {e1} {rel} {e2} (doc: {doc}, chunk: {chunk})")
                     if docs:
-                        st.caption("📄 Docs: " + ", ".join(sorted([d for d in docs if d])))
+                        st.caption(" Docs: " + ", ".join(sorted([d for d in docs if d])))
 
             # Add to chat history
             st.session_state.chat_history.append(
@@ -343,13 +343,13 @@ elif st.session_state.page == "chat":
     # Recent conversation
     if st.session_state.chat_history:
         st.markdown("---")
-        st.markdown("### 📝 Recent Conversation")
+        st.markdown("###  Recent Conversation")
         for item in st.session_state.chat_history[-3:]:
             with st.container():
                 st.markdown(f"**You:** {item['user']}")
                 tag = {
                     "retriever": "🔍 **Bot:**",
-                    "llm": "🤖 **Bot:**",
+                    "llm": " **Bot:**",
                 }.get(item.get("source", ""), "**Bot:**")
                 st.markdown(f"{tag} {item['bot']}")
                 st.markdown("---")
