@@ -34,29 +34,41 @@ The system combines **LlamaIndex**, **LangChain**, and **Neo4j Graph-RAG** to de
 
 ##  Project Structure
 ```
-multimodal-rag-assistant/
-├── app.py # Streamlit frontend (main UI)
-├── vector_search.py # Core hybrid RAG & Graph-RAG logic
-├── llama_index_setup.py # LlamaIndex configuration & retriever setup
-├── config.py # Central configuration & environment settings
-├── graph_enrichment.py # Triple extraction and Neo4j enrichment
-├── graph_queries.py # Querying relationships from Neo4j
-├── document_ingestion.py # Document ingestion (text embedding)
-├── image_ingestion.py # Image embedding via CLIP
-├── audio_ingestion.py # Audio transcription & embedding
-├── video_ingestion.py # Video → audio → text ingestion
-├── requirements.txt # Python dependencies
-├── .env.example # Environment variable template
-├── Screenshots/ # UI screenshots
-│ ├── landing_page.png
-│ ├── selection.png
-│ ├── audio_output.png
-│ ├── image_output.png
-│ ├── text_output.png
-│ └── summary.png
-└── README.md
+MULTIMODAL-RAG-ASSISTANT/
+│
+├── .github/
+│   └── workflows/
+│       └── build.yml                 # GitHub Actions workflow for CI/CD
+├── data/                             # Raw input data (git-ignored)
+│   ├── audio/                        # Audio files for embedding
+│   ├── docs/                         # Text and document files
+│   ├── images/                       # Image files (for CLIP embeddings)
+│   ├── video/                        # Video files (transcribed via Whisper)
+│   └── db/                           # Any local database storage
+├── docs/                             # Documentation and markdown notes
+├── Screenshots/                      # Screenshots for README/demo
+├── vectorstore/                      # ChromaDB persisted embeddings
+├── .dockerignore                     # Ignore rules for Docker builds
+├── .env                              # Environment variables (not committed)
+├── .env.example                      # Template for environment variables
+├── .gitignore                        # Ignore unnecessary files/folders
+├── app.py                            # Streamlit frontend – main entry point
+├── audio_ingestion.py                # Audio ingestion pipeline
+├── document_ingestion.py             # Document ingestion pipeline
+├── image_ingestion.py                # Image ingestion pipeline
+├── video_ingestion.py                # Video ingestion pipeline
+├── config.py                         # Centralized configuration file
+├── docker-compose.yml                # Docker Compose for multi-container setup
+├── Dockerfile                        # Docker build configuration
+├── graph_enrichment.py               # Extract and insert triples into Neo4j
+├── graph_queries.py                  # Query graph relationships from Neo4j
+├── llama_index_setup.py              # LlamaIndex setup (embeddings, retrievers)
+├── vector_search.py                  # Hybrid multimodal RAG + LangChain logic
+├── test_neo4j.py                     # Utility to test Neo4j connection
+├── main.ipynb                        # Optional notebook for experimentation
+├── requirements.txt                  # Python dependencies
+├── README.md                         # Main project documentation
 ```
-
 ---
 
 ##  Workflow Overview
