@@ -92,7 +92,7 @@ multimodal-rag-assistant/
 ##  Screenshots
 
 **Landing Page**  
-![Landing Page](Screenshots/landing_page.png)
+![Landing Page](Screenshots/langing_page.png)
 
 **Input Selection**  
 ![Selection Page](Screenshots/selection.png)
