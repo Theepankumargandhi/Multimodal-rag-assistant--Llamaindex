@@ -1,11 +1,11 @@
-# 🦙 Multimodal Retrieval-Augmented Generation (RAG) Assistant
+#  Multimodal Retrieval-Augmented Generation (RAG) Assistant
 
 A **Streamlit-based AI assistant** that integrates **text, audio, image, and video data** into a unified **Retrieval-Augmented Generation (RAG)** framework for **context-aware answers**.  
 The system combines **LlamaIndex**, **LangChain**, and **Neo4j Graph-RAG** to deliver precise, explainable, and multimodal insights with persistent conversation history.
 
 ---
 
-## 🚀 Features
+##  Features
 
 - **Multimodal Input Support** – Query using text, upload audio/video (transcribed with Whisper), or images (embedded with CLIP).
 - **Hybrid RAG Engine** – Combines LlamaIndex (retrieval) and LangChain (orchestration, memory).
@@ -19,7 +19,7 @@ The system combines **LlamaIndex**, **LangChain**, and **Neo4j Graph-RAG** to de
 - **Streamlit Frontend** – Clean, modern interface with media upload, chat history viewer, and user session tracking.
 
 ---
-## 🧠 Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|-------------|
@@ -32,7 +32,7 @@ The system combines **LlamaIndex**, **LangChain**, and **Neo4j Graph-RAG** to de
 
 ---
 
-## 🗂 Project Structure
+##  Project Structure
 ```
 multimodal-rag-assistant/
 ├── app.py # Streamlit frontend (main UI)
@@ -59,7 +59,7 @@ multimodal-rag-assistant/
 
 ---
 
-## 🧩 Workflow Overview
+##  Workflow Overview
 
 1. **User Input**  
    Text, image, audio, or video input provided via Streamlit UI.  
@@ -89,7 +89,7 @@ multimodal-rag-assistant/
 
 ---
 
-## 🖼 Screenshots
+##  Screenshots
 
 **Landing Page**  
 ![Landing Page](Screenshots/landing_page.png)
@@ -110,9 +110,9 @@ multimodal-rag-assistant/
 ![Chat Summary](Screenshots/summary.png)
 
 ---
-## ⚙️ Installation Guide
+##  Installation Guide
 
-### 1️⃣ Clone the Repository
+###  Clone the Repository
 
 ```
 git clone https://github.com/Theepankumargandhi/multimodal-rag-assistant--Llamaindex.git
