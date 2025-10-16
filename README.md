@@ -135,10 +135,10 @@ NEO4J_PASSWORD=your-password
 ```
 ---
 ## Prepare Data
-data/docs/        → PDF/TXT documents
-data/images/      → JPG/PNG images
-data/audio/       → MP3/WAV audio
-data/video/       → MP4/MOV videos
+* data/docs/        → PDF/TXT documents
+* data/images/      → JPG/PNG images
+* data/audio/       → MP3/WAV audio
+* data/video/       → MP4/MOV videos
 
 ## Run the ingestion scripts
 ```
@@ -187,7 +187,7 @@ docker run -p 8501:8501 \
 ```
 ## Building Docker Image Locally
 
-``
+```
 docker build -t multimodal-rag-assistant .  # Build the image
 docker run -p 8501:8501 --env-file .env multimodal-rag-assistant  # Run the container
 ```
@@ -202,10 +202,10 @@ Check the build status in the Actions tab
 
 .github/workflows/build.yml
 
-Automated Docker builds on push
-Multi-architecture support (amd64)
-Image caching for faster builds
-Automatic versioning with git commit SHA
+* Automated Docker builds on push
+* Multi-architecture support (amd64)
+* Image caching for faster builds
+* Automatic versioning with git commit SHA
 
 ---
 ## Graph-RAG Mode
